@@ -1,0 +1,55 @@
+/*
+ * Copyright (C) 2026 Hylke van der Schaaf.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package nl.thenoid.mathtrainer;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.cfg.EnumFeature;
+import tools.jackson.databind.json.JsonMapper;
+
+/**
+ * A mapper handler for simple json serialisations.
+ */
+public class SimpleJsonMapper {
+
+    private static ObjectMapper simpleObjectMapper;
+
+    private SimpleJsonMapper() {
+        // Utility class.
+    }
+
+    /**
+     * get an ObjectMapper for generic, non-STA use.
+     *
+     * @return an ObjectMapper for generic, non-STA use.
+     */
+    public static ObjectMapper getSimpleObjectMapper() {
+        if (simpleObjectMapper == null) {
+            simpleObjectMapper = JsonMapper.builder()
+                    .changeDefaultPropertyInclusion(incl -> incl.withValueInclusion(JsonInclude.Include.ALWAYS))
+                    .changeDefaultPropertyInclusion(incl -> incl.withContentInclusion(JsonInclude.Include.ALWAYS))
+                    .disable(EnumFeature.READ_ENUMS_USING_TO_STRING)
+                    .disable(EnumFeature.WRITE_ENUMS_USING_TO_STRING)
+                    .enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                    .enable(SerializationFeature.INDENT_OUTPUT)
+                    .build();
+        }
+        return simpleObjectMapper;
+    }
+}
