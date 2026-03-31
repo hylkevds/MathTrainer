@@ -19,6 +19,7 @@ package nl.thenoid.mathtrainer;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import org.apache.commons.lang3.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ public class AveragesManager {
     private final int size;
     private final long dflt;
 
+    private final Set<String> activeProblems = new TreeSet<>();
     private final Map<String, RunningAverageLong> averages = new LinkedHashMap<>();
 
     public AveragesManager(int size, long dflt) {
@@ -44,7 +46,12 @@ public class AveragesManager {
         avg.add(value);
     }
 
+    public void clearActiveProblems() {
+        activeProblems.clear();
+    }
+
     public void create(String problem) {
+        activeProblems.add(problem);
         averages.computeIfAbsent(problem, p -> new RunningAverageLong(size, dflt));
     }
 
@@ -54,26 +61,32 @@ public class AveragesManager {
 
     public double getSum() {
         double sum = 0;
-        for (var avg : averages.values()) {
-            sum += avg.getValue();
+        for (var entry : averages.entrySet()) {
+            if (!activeProblems.contains(entry.getKey())) {
+                continue;
+            }
+            sum += entry.getValue().getValue();
         }
         return sum;
     }
 
     public String getProblemAt(double value) {
         double sum = 0;
-        String last = "";
+        String key = "";
         for (var entry : averages.entrySet()) {
+            key = entry.getKey();
+            if (!activeProblems.contains(key)) {
+                continue;
+            }
             final double weight = entry.getValue().getValue();
             sum += weight;
-            last = entry.getKey();
             if (sum > value) {
-                LOGGER.info("Found {} with weight {}", last, weight);
-                return last;
+                LOGGER.info("Found {} with weight {}", key, weight);
+                return key;
             }
         }
         LOGGER.warn("Hit end of loop!");
-        return last;
+        return key;
     }
 
     public String findRandom() {

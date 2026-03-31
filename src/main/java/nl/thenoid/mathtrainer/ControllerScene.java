@@ -20,17 +20,23 @@ import java.io.File;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.TreeMap;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Label;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Background;
 import javafx.scene.layout.GridPane;
+import javafx.scene.paint.Color;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,16 +62,27 @@ public class ControllerScene implements Initializable {
     private static final int MIN_RIGHT = 1;
     private static final int MAX_RIGHT = 10;
 
-    private AveragesManager durations = new AveragesManager(AVERAGE_COUNT, DEFAULT_ANSWER_TIME);
+    private static final Background BACKGROUND_NONE = null;
+    private static final Background BACKGROUND_OK = Background.fill(new Color(0.5, 1, 0.5, 1));
+    private static final Background BACKGROUND_WRONG = Background.fill(new Color(1, 0.5, 0.5, 1));
+    private static final String TEXT_WRONG = "🗷";
+    private static final String TEXT_OK = "🗹";
+
+    private final AveragesManager durations = new AveragesManager(AVERAGE_COUNT, DEFAULT_ANSWER_TIME);
+    private final List<CheckMenuItem> menuItemsProblems = new ArrayList<>();
 
     private State state = State.PAUSED;
     private Instant stateTime;
     private long curDuration;
-    private String curProblem;
+    private String curProblem = "";
     private int curLeft;
     private int curRight;
     private String curAnswer;
 
+    @FXML
+    private MenuBar menuBarMain;
+    @FXML
+    private Menu menuMain;
     @FXML
     private AnchorPane paneCore;
     @FXML
@@ -97,7 +114,10 @@ public class ControllerScene implements Initializable {
 
     private void generateQuestion() {
         state = State.THINKING;
-        curProblem = durations.findRandom();
+        String oldProblem = curProblem;
+        while (curProblem.equals(oldProblem)) {
+            curProblem = durations.findRandom();
+        }
         String[] split = StringUtils.split(curProblem, 'x');
         if (split.length != 2) {
             LOGGER.error("Bad split for {}", curProblem);
@@ -165,14 +185,17 @@ public class ControllerScene implements Initializable {
         } catch (NumberFormatException ex) {
             LOGGER.error("Answer is not an int: {}", curAnswer);
             lblHint.setText("Not a Number");
+            lblHint.setBackground(BACKGROUND_WRONG);
         }
         if (answerValue == curLeft * curRight) {
-            lblHint.setText("OK!");
+            lblHint.setText(TEXT_OK);
+            lblHint.setBackground(BACKGROUND_OK);
             LOGGER.info("Problem: {}. Duration: {}", curProblem, curDuration);
             durations.add(curProblem, curDuration);
             generateQuestion();
         } else {
-            lblHint.setText("Fout!");
+            lblHint.setText(TEXT_WRONG);
+            lblHint.setBackground(BACKGROUND_WRONG);
             state = State.THINKING;
         }
 
@@ -184,25 +207,48 @@ public class ControllerScene implements Initializable {
         lblRight.setText("?");
         lblAnswer.setText("...");
         lblHint.setText("Any key to start");
+        lblHint.setBackground(BACKGROUND_NONE);
         save();
     }
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
+        LOGGER.info("Initialising");
     }
 
     public void start() {
-        LOGGER.info("Initialising Averages");
-        for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
-            for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
-                final String p = "" + left + 'x' + right;
-                durations.create(p);
-            }
+        for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
+            CheckMenuItem menuItem = new CheckMenuItem("? x " + right);
+            menuItem.setSelected(true);
+            menuItem.setOnAction(e -> readMenuItems());
+            menuItemsProblems.add(menuItem);
+            menuMain.getItems().add(menuItem);
         }
+        initProblems();
         load();
         LOGGER.info("Initialising Controller");
         paneCore.getScene().setOnKeyReleased(this::actionKeyReleased);
         setPaused();
+    }
+
+    private void readMenuItems() {
+        setPaused();
+        initProblems();
+    }
+
+    private void initProblems() {
+        LOGGER.info("Initialising Averages");
+        durations.clearActiveProblems();
+        for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
+            CheckMenuItem menuItem = menuItemsProblems.get(right - 1);
+            if (!menuItem.isSelected()) {
+                continue;
+            }
+            for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
+                final String p = "" + left + 'x' + right;
+                durations.create(p);
+            }
+        }
     }
 
     private void load() {
@@ -215,6 +261,12 @@ public class ControllerScene implements Initializable {
                 LOGGER.error("Failed to read.", ex);
                 return;
             }
+            if (data.selectedProblems != null) {
+                int cnt = Math.max(data.selectedProblems.size(), menuItemsProblems.size());
+                for (int idx = 0; idx < cnt; idx++) {
+                    menuItemsProblems.get(idx).setSelected(data.selectedProblems.get(idx));
+                }
+            }
             for (var entry : data.weights.entrySet()) {
                 String key = entry.getKey();
                 List<Long> values = entry.getValue();
@@ -223,10 +275,17 @@ public class ControllerScene implements Initializable {
                 }
             }
         }
+        readMenuItems();
     }
 
     private void save() {
         DataFile data = new DataFile();
+        data.selectedProblems = new ArrayList<>();
+        for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
+            CheckMenuItem menuItem = menuItemsProblems.get(right - 1);
+            data.selectedProblems.add(menuItem.isSelected());
+        }
+
         data.weights = new TreeMap<>();
         for (var entry : durations.entrySet()) {
             String key = entry.getKey();
@@ -239,6 +298,7 @@ public class ControllerScene implements Initializable {
 
     private static class DataFile {
 
+        public List<Boolean> selectedProblems;
         public Map<String, List<Long>> weights;
 
     }
