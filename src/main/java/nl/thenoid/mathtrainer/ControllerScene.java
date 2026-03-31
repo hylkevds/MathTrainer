@@ -36,6 +36,7 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -87,6 +88,8 @@ public class ControllerScene implements Initializable {
     private AnchorPane paneCore;
     @FXML
     private GridPane gridPaneMain;
+    @FXML
+    private VBox vboxStats;
 
     @FXML
     private Label lblLeft;
@@ -198,7 +201,7 @@ public class ControllerScene implements Initializable {
             lblHint.setBackground(BACKGROUND_WRONG);
             state = State.THINKING;
         }
-
+        updateStats();
     }
 
     private void setPaused() {
@@ -249,6 +252,22 @@ public class ControllerScene implements Initializable {
                 durations.create(p);
             }
         }
+        updateStats();
+    }
+
+    private void updateStats() {
+        vboxStats.getChildren().clear();
+        for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
+            String label = "? x " + right;
+            double sum = 0;
+            for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
+                sum += durations.getValueForProblem("" + left + "x" + right);
+            }
+            long avg = Math.round(0.001 * sum / (MAX_LEFT - MIN_LEFT));
+            label = label + ": " + avg;
+            vboxStats.getChildren().add(new Label(label));
+        }
+
     }
 
     private void load() {

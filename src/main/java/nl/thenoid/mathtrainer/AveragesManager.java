@@ -89,6 +89,11 @@ public class AveragesManager {
         return key;
     }
 
+    public double getValueForProblem(String problem) {
+        RunningAverageLong ravg = averages.get(problem);
+        return ravg.getValue();
+    }
+
     public String findRandom() {
         final double sum = getSum();
         double rnd = RandomUtils.insecure().randomDouble(0, sum);
