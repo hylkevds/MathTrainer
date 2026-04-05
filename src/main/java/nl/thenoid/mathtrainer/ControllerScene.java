@@ -281,7 +281,7 @@ public class ControllerScene implements Initializable {
             for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
                 sum += durations.getValueForProblem("" + left + "x" + right);
             }
-            long avg = Math.round(0.001 * sum / (MAX_LEFT - MIN_LEFT));
+            long avg = Math.round(0.001 * sum / (1 + MAX_LEFT - MIN_LEFT));
             label = label + ": " + avg;
             vboxStats.getChildren().add(new Label(label));
         }
