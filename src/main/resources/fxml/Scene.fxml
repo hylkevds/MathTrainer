@@ -23,32 +23,33 @@
                         <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
                     </columnConstraints>
                     <rowConstraints>
+                  <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                         <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                   <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
                     </rowConstraints>
                     <children>
-                        <Label fx:id="lblLeft" text="1" GridPane.halignment="RIGHT">
+                        <Label fx:id="lblLeft" text="1" GridPane.halignment="RIGHT" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1">
                             <font>
                                 <Font size="64.0" />
                             </font>
                         </Label>
-                        <Label fx:id="lblMiddle" text="x" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="NEVER">
+                        <Label fx:id="lblMiddle" text="x" GridPane.columnIndex="1" GridPane.halignment="CENTER" GridPane.hgrow="NEVER" GridPane.rowIndex="1">
                             <font>
                                 <Font size="64.0" />
                             </font>
                         </Label>
-                        <Label fx:id="lblRight" text="1" GridPane.columnIndex="2" GridPane.halignment="LEFT">
+                        <Label fx:id="lblRight" text="1" GridPane.columnIndex="2" GridPane.halignment="LEFT" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1">
                             <font>
                                 <Font size="64.0" />
                             </font>
                         </Label>
-                        <Label fx:id="lblAnswer" text="1" GridPane.columnSpan="3" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1">
+                        <Label fx:id="lblAnswer" text="1" GridPane.columnSpan="3" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2">
                             <font>
                                 <Font size="48.0" />
                             </font>
                         </Label>
-                  <Label fx:id="lblHint" text="Label" GridPane.columnSpan="3" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2">
+                  <Label fx:id="lblHint" text="Label" GridPane.columnSpan="3" GridPane.halignment="CENTER" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3">
                      <font>
                         <Font size="36.0" />
                      </font>
@@ -56,13 +57,19 @@
                         <Insets bottom="10.0" left="50.0" right="50.0" top="10.0" />
                      </padding>
                   </Label>
+                  <Label fx:id="lblHello" text="Hello" GridPane.columnSpan="3" GridPane.halignment="CENTER">
+                     <font>
+                        <Font size="24.0" />
+                     </font>
+                  </Label>
                     </children>
                 </GridPane>
             </center>
          <top>
             <MenuBar fx:id="menuBarMain" BorderPane.alignment="CENTER">
               <menus>
-                <Menu fx:id="menuMain" mnemonicParsing="false" text="Main" />
+                  <Menu fx:id="menuWho" mnemonicParsing="false" text="Who" />
+                <Menu fx:id="menuWhat" mnemonicParsing="false" text="What" />
               </menus>
             </MenuBar>
          </top>

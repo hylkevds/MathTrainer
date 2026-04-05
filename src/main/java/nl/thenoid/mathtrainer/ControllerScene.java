@@ -31,6 +31,8 @@ import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
 import javafx.scene.control.MenuBar;
+import javafx.scene.control.RadioMenuItem;
+import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
@@ -62,15 +64,21 @@ public class ControllerScene implements Initializable {
     private static final int MAX_LEFT = 10;
     private static final int MIN_RIGHT = 1;
     private static final int MAX_RIGHT = 10;
+    private static final String PERSON_UNKNOWN = "Dr. Who";
 
     private static final Background BACKGROUND_NONE = null;
     private static final Background BACKGROUND_OK = Background.fill(new Color(0.5, 1, 0.5, 1));
     private static final Background BACKGROUND_WRONG = Background.fill(new Color(1, 0.5, 0.5, 1));
+    private static final String TEXT_EMPTY = "☐";
     private static final String TEXT_WRONG = "🗷";
     private static final String TEXT_OK = "🗹";
+    private static final String TEXT_HELLO = "Hello ";
 
     private final AveragesManager durations = new AveragesManager(AVERAGE_COUNT, DEFAULT_ANSWER_TIME);
     private final List<CheckMenuItem> menuItemsProblems = new ArrayList<>();
+    private String activePerson = PERSON_UNKNOWN;
+    private final ToggleGroup tgPersons = new ToggleGroup();
+    private final List<RadioMenuItem> menuItemsPersons = new ArrayList<>();
 
     private State state = State.PAUSED;
     private Instant stateTime;
@@ -83,7 +91,9 @@ public class ControllerScene implements Initializable {
     @FXML
     private MenuBar menuBarMain;
     @FXML
-    private Menu menuMain;
+    private Menu menuWho;
+    @FXML
+    private Menu menuWhat;
     @FXML
     private AnchorPane paneCore;
     @FXML
@@ -91,6 +101,8 @@ public class ControllerScene implements Initializable {
     @FXML
     private VBox vboxStats;
 
+    @FXML
+    private Label lblHello;
     @FXML
     private Label lblLeft;
     @FXML
@@ -225,7 +237,7 @@ public class ControllerScene implements Initializable {
             menuItem.setSelected(true);
             menuItem.setOnAction(e -> readMenuItems());
             menuItemsProblems.add(menuItem);
-            menuMain.getItems().add(menuItem);
+            menuWhat.getItems().add(menuItem);
         }
         initProblems();
         load();
@@ -258,7 +270,13 @@ public class ControllerScene implements Initializable {
     private void updateStats() {
         vboxStats.getChildren().clear();
         for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
-            String label = "? x " + right;
+            String label;
+            if (menuItemsProblems.get(right - MIN_RIGHT).isSelected()) {
+                label = TEXT_OK;
+            } else {
+                label = TEXT_EMPTY;
+            }
+            label += " ? x " + right;
             double sum = 0;
             for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
                 sum += durations.getValueForProblem("" + left + "x" + right);
@@ -271,34 +289,76 @@ public class ControllerScene implements Initializable {
     }
 
     private void load() {
+        DataFile dataFile = loadFile();
+        menuWho.getItems().clear();
+        menuItemsPersons.clear();
+        for (final String name : dataFile.persons.keySet()) {
+            RadioMenuItem menuItem = new RadioMenuItem(name);
+            menuItem.setToggleGroup(tgPersons);
+            if (name.equals(dataFile.lastPerson)) {
+                menuItem.setSelected(true);
+            }
+            menuItem.setOnAction(e -> load(name));
+            menuWho.getItems().add(menuItem);
+        }
+        load(dataFile.lastPerson, dataFile);
+    }
+
+    private DataFile loadFile() {
         File file = new File("state.json");
         if (file.exists()) {
-            DataFile data;
             try {
-                data = SimpleJsonMapper.getSimpleObjectMapper().readValue(file, DataFile.class);
+                return SimpleJsonMapper.getSimpleObjectMapper().readValue(file, DataFile.class);
             } catch (JacksonException ex) {
                 LOGGER.error("Failed to read.", ex);
-                return;
             }
+        }
+        return new DataFile();
+    }
+
+    private void load(String person) {
+        load(person, loadFile());
+    }
+
+    private void load(String person, DataFile dataFile) {
+        activePerson = person;
+        lblHello.setText(TEXT_HELLO + activePerson);
+        if (dataFile.persons.containsKey(person)) {
+            DataPerson data = dataFile.persons.get(person);
             if (data.selectedProblems != null) {
                 int cnt = Math.max(data.selectedProblems.size(), menuItemsProblems.size());
                 for (int idx = 0; idx < cnt; idx++) {
                     menuItemsProblems.get(idx).setSelected(data.selectedProblems.get(idx));
                 }
             }
-            for (var entry : data.weights.entrySet()) {
-                String key = entry.getKey();
-                List<Long> values = entry.getValue();
-                for (Long value : values) {
-                    durations.add(key, value);
+            if (data.weights != null) {
+                for (var entry : data.weights.entrySet()) {
+                    String key = entry.getKey();
+                    List<Long> values = entry.getValue();
+                    for (Long value : values) {
+                        durations.add(key, value);
+                    }
                 }
+            }
+        } else {
+            int cnt = menuItemsProblems.size();
+            for (int idx = 0; idx < cnt; idx++) {
+                menuItemsProblems.get(idx).setSelected(true);
             }
         }
         readMenuItems();
     }
 
     private void save() {
-        DataFile data = new DataFile();
+        DataFile dataFile = loadFile();
+        dataFile.lastPerson = activePerson;
+        dataFile.persons.put(activePerson, gather());
+        File file = new File("state.json");
+        SimpleJsonMapper.getSimpleObjectMapper().writeValue(file, dataFile);
+    }
+
+    private DataPerson gather() {
+        DataPerson data = new DataPerson();
         data.selectedProblems = new ArrayList<>();
         for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
             CheckMenuItem menuItem = menuItemsProblems.get(right - 1);
@@ -311,11 +371,16 @@ public class ControllerScene implements Initializable {
             RunningAverageLong values = entry.getValue();
             data.weights.put(key, values.getValues());
         }
-        File file = new File("state.json");
-        SimpleJsonMapper.getSimpleObjectMapper().writeValue(file, data);
+        return data;
     }
 
     private static class DataFile {
+
+        public String lastPerson = PERSON_UNKNOWN;
+        public TreeMap<String, DataPerson> persons = new TreeMap<>();
+    }
+
+    private static class DataPerson {
 
         public List<Boolean> selectedProblems;
         public Map<String, List<Long>> weights;
