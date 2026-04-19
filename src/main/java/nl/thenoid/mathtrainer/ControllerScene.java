@@ -58,7 +58,8 @@ public class ControllerScene implements Initializable {
         PROCESSING,
     }
 
-    private static final int AVERAGE_COUNT = 10;
+    private static final int AVERAGE_COUNT_ALL = 10;
+    private static final int AVERAGE_COUNT_SHORT = 5;
     private static final long DEFAULT_ANSWER_TIME = 60_000;
     private static final int MIN_LEFT = 1;
     private static final int MAX_LEFT = 10;
@@ -74,7 +75,8 @@ public class ControllerScene implements Initializable {
     private static final String TEXT_OK = "🗹";
     private static final String TEXT_HELLO = "Hello ";
 
-    private final AveragesManager durations = new AveragesManager(AVERAGE_COUNT, DEFAULT_ANSWER_TIME);
+    private final AveragesManager durationsAll = new AveragesManager(AVERAGE_COUNT_ALL, DEFAULT_ANSWER_TIME);
+    private final AveragesManager durationsShort = new AveragesManager(AVERAGE_COUNT_SHORT, DEFAULT_ANSWER_TIME);
     private final List<CheckMenuItem> menuItemsProblems = new ArrayList<>();
     private String activePerson = PERSON_UNKNOWN;
     private final ToggleGroup tgPersons = new ToggleGroup();
@@ -137,7 +139,7 @@ public class ControllerScene implements Initializable {
         state = State.THINKING;
         String oldProblem = curProblem;
         while (curProblem.equals(oldProblem)) {
-            curProblem = durations.findRandom();
+            curProblem = durationsShort.findRandom();
         }
         String[] split = StringUtils.split(curProblem, 'x');
         if (split.length != 2) {
@@ -212,7 +214,8 @@ public class ControllerScene implements Initializable {
             setLabel(lblHint, TEXT_OK, BACKGROUND_OK);
             setLabel(lblAnswer, curAnswer, BACKGROUND_OK);
             LOGGER.info("Problem: {}. Duration: {}", curProblem, curDuration);
-            durations.add(curProblem, curDuration);
+            durationsAll.add(curProblem, curDuration);
+            durationsShort.add(curProblem, curDuration);
         } else {
             setLabel(lblHint, TEXT_WRONG, BACKGROUND_WRONG);
             setLabel(lblAnswer, curAnswer, BACKGROUND_WRONG);
@@ -257,7 +260,7 @@ public class ControllerScene implements Initializable {
 
     private void initProblems() {
         LOGGER.info("Initialising Averages");
-        durations.clearActiveProblems();
+        durationsShort.clearActiveProblems();
         for (int right = MIN_RIGHT; right <= MAX_RIGHT; right++) {
             CheckMenuItem menuItem = menuItemsProblems.get(right - 1);
             if (!menuItem.isSelected()) {
@@ -265,7 +268,8 @@ public class ControllerScene implements Initializable {
             }
             for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
                 final String p = "" + left + 'x' + right;
-                durations.create(p);
+                durationsAll.create(p);
+                durationsShort.create(p);
             }
         }
         updateStats();
@@ -283,7 +287,7 @@ public class ControllerScene implements Initializable {
             label += " ? x " + right;
             double sum = 0;
             for (int left = MIN_LEFT; left <= MAX_LEFT; left++) {
-                sum += durations.getValueForProblem("" + left + "x" + right);
+                sum += durationsShort.getValueForProblem("" + left + "x" + right);
             }
             long avg = Math.round(0.001 * sum / (1 + MAX_LEFT - MIN_LEFT));
             label = label + ": " + avg;
@@ -340,7 +344,8 @@ public class ControllerScene implements Initializable {
                     String key = entry.getKey();
                     List<Long> values = entry.getValue();
                     for (Long value : values) {
-                        durations.add(key, value);
+                        durationsAll.add(key, value);
+                        durationsShort.add(key, value);
                     }
                 }
             }
@@ -370,7 +375,7 @@ public class ControllerScene implements Initializable {
         }
 
         data.weights = new TreeMap<>();
-        for (var entry : durations.entrySet()) {
+        for (var entry : durationsAll.entrySet()) {
             String key = entry.getKey();
             RunningAverageLong values = entry.getValue();
             data.weights.put(key, values.getValues());
