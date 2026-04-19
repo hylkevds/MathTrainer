@@ -5,6 +5,7 @@
     <artifactId>MathTrainer</artifactId>
     <version>0.1-SNAPSHOT</version>
     <properties>
+        <mainClass>nl.thenoid.mathtrainer.MainApp</mainClass>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
@@ -13,6 +14,7 @@
         <version.jackson>3.1.0</version.jackson>
         <version.logback>1.5.32</version.logback>
 
+        <version.maven.plugin.assembly>3.8.0</version.maven.plugin.assembly>
         <version.maven.plugin.compiler>3.15.0</version.maven.plugin.compiler>
         <version.maven.plugin.javafx>0.0.8</version.maven.plugin.javafx>
         <version.maven.plugin.spotless>3.4.0</version.maven.plugin.spotless>
@@ -101,7 +103,7 @@
                 <artifactId>javafx-maven-plugin</artifactId>
                 <version>${version.maven.plugin.javafx}</version>
                 <configuration>
-                    <mainClass>nl.thenoid.mathtrainer.App</mainClass>
+                    <mainClass>${mainClass}</mainClass>
                 </configuration>
                 <executions>
                     <execution>
@@ -199,6 +201,30 @@
                             <goal>check</goal>
                         </goals>
                         <phase>compile</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>${version.maven.plugin.assembly}</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>${mainClass}</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <phase>package</phase>
                     </execution>
                 </executions>
             </plugin>
