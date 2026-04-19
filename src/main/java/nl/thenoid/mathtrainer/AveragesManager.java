@@ -70,11 +70,10 @@ public class AveragesManager {
         return sum;
     }
 
-    public String getProblemAt(double value) {
+    public Map.Entry<String, RunningAverageLong> getProblemAt(double value) {
         double sum = 0;
-        String key = "";
         for (var entry : averages.entrySet()) {
-            key = entry.getKey();
+            String key = entry.getKey();
             if (!activeProblems.contains(key)) {
                 continue;
             }
@@ -82,11 +81,11 @@ public class AveragesManager {
             sum += weight;
             if (sum > value) {
                 LOGGER.info("Found {} with weight {}", key, weight);
-                return key;
+                return entry;
             }
         }
         LOGGER.warn("Hit end of loop!");
-        return key;
+        return null;
     }
 
     public double getValueForProblem(String problem) {
@@ -96,9 +95,11 @@ public class AveragesManager {
 
     public String findRandom() {
         final double sum = getSum();
-        double rnd = RandomUtils.insecure().randomDouble(0, sum);
-        LOGGER.info("Sum {}, Rnd {}", sum, rnd);
-        return getProblemAt(rnd);
+        final double rnd = RandomUtils.insecure().randomDouble(0, sum);
+        final var entry = getProblemAt(rnd);
+        double chance = 0.01 * Math.round(10000.0 * entry.getValue().getValue() / sum);
+        LOGGER.info("Sum {}, Rnd {}, Chance {}", sum, rnd, String.format("%3.2f", chance));
+        return entry.getKey();
     }
 
     public Set<Map.Entry<String, RunningAverageLong>> entrySet() {
