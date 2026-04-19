@@ -55,7 +55,7 @@ public class ControllerScene implements Initializable {
         PAUSED,
         THINKING,
         ANSWERING,
-        PROCESSING
+        PROCESSING,
     }
 
     private static final int AVERAGE_COUNT = 10;
@@ -121,9 +121,15 @@ public class ControllerScene implements Initializable {
             case PAUSED:
                 generateQuestion();
                 break;
+
             case THINKING:
             case ANSWERING:
                 recordAnswer(event.getText(), event.getCode());
+                break;
+
+            case PROCESSING:
+                generateQuestion();
+                break;
         }
     }
 
@@ -139,10 +145,11 @@ public class ControllerScene implements Initializable {
         }
         curLeft = Integer.parseInt(split[0]);
         curRight = Integer.parseInt(split[1]);
-        lblLeft.setText(split[0]);
-        lblRight.setText(split[1]);
         curAnswer = "";
-        lblAnswer.setText(curAnswer);
+        setLabel(lblAnswer, curAnswer, BACKGROUND_NONE);
+        setLabel(lblLeft, split[0], BACKGROUND_NONE);
+        setLabel(lblRight, split[1], BACKGROUND_NONE);
+        setLabel(lblHint, "?", BACKGROUND_NONE);
         stateTime = Instant.now();
     }
 
@@ -174,14 +181,14 @@ public class ControllerScene implements Initializable {
             case "8":
             case "9":
                 curAnswer += key;
-                lblAnswer.setText(curAnswer);
+                setLabel(lblAnswer, curAnswer, BACKGROUND_NONE);
                 break;
         }
         switch (code) {
             case BACK_SPACE:
                 if (curAnswer.length() > 0) {
                     curAnswer = curAnswer.substring(0, curAnswer.length() - 1);
-                    lblAnswer.setText(curAnswer);
+                    setLabel(lblAnswer, curAnswer, BACKGROUND_NONE);
                 }
                 break;
 
@@ -199,18 +206,16 @@ public class ControllerScene implements Initializable {
             answerValue = Integer.parseInt(curAnswer);
         } catch (NumberFormatException ex) {
             LOGGER.error("Answer is not an int: {}", curAnswer);
-            lblHint.setText("Not a Number");
-            lblHint.setBackground(BACKGROUND_WRONG);
+            setLabel(lblHint, "Not a Number", BACKGROUND_WRONG);
         }
         if (answerValue == curLeft * curRight) {
-            lblHint.setText(TEXT_OK);
-            lblHint.setBackground(BACKGROUND_OK);
+            setLabel(lblHint, TEXT_OK, BACKGROUND_OK);
+            setLabel(lblAnswer, curAnswer, BACKGROUND_OK);
             LOGGER.info("Problem: {}. Duration: {}", curProblem, curDuration);
             durations.add(curProblem, curDuration);
-            generateQuestion();
         } else {
-            lblHint.setText(TEXT_WRONG);
-            lblHint.setBackground(BACKGROUND_WRONG);
+            setLabel(lblHint, TEXT_WRONG, BACKGROUND_WRONG);
+            setLabel(lblAnswer, curAnswer, BACKGROUND_WRONG);
             state = State.THINKING;
         }
         updateStats();
@@ -221,8 +226,7 @@ public class ControllerScene implements Initializable {
         lblLeft.setText("?");
         lblRight.setText("?");
         lblAnswer.setText("...");
-        lblHint.setText("Any key to start");
-        lblHint.setBackground(BACKGROUND_NONE);
+        setLabel(lblHint, "Any key to start", BACKGROUND_NONE);
         save();
     }
 
@@ -372,6 +376,11 @@ public class ControllerScene implements Initializable {
             data.weights.put(key, values.getValues());
         }
         return data;
+    }
+
+    private static void setLabel(Label lbl, String text, Background bgrnd) {
+        lbl.setText(text);
+        lbl.setBackground(bgrnd);
     }
 
     private static class DataFile {
