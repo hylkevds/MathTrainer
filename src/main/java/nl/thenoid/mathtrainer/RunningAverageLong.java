@@ -30,10 +30,6 @@ public class RunningAverageLong {
     private double current;
     private long sum;
 
-    public RunningAverageLong(int size) {
-        this(size, 0);
-    }
-
     public RunningAverageLong(int size, long dflt) {
         this.size = size;
         values = new ArrayDeque<>();
@@ -54,7 +50,7 @@ public class RunningAverageLong {
         }
         values.add(number);
         sum += number;
-        current = sum / size;
+        current = 1.0 * sum / size;
         return current;
     }
 
