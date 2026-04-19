@@ -119,6 +119,10 @@ public class ControllerScene implements Initializable {
     @FXML
     private void actionKeyReleased(KeyEvent event) {
         LOGGER.debug("Key: {}", event);
+        if (event.getText().equalsIgnoreCase("s")) {
+            setPaused();
+            return;
+        }
         switch (state) {
             case PAUSED:
                 generateQuestion();
@@ -228,7 +232,7 @@ public class ControllerScene implements Initializable {
         state = State.PAUSED;
         lblLeft.setText("?");
         lblRight.setText("?");
-        lblAnswer.setText("...");
+        setLabel(lblAnswer, "...", BACKGROUND_NONE);
         setLabel(lblHint, "Any key to start", BACKGROUND_NONE);
         save();
     }
