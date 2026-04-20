@@ -59,28 +59,47 @@ public class AveragesManager {
         averages.remove(problem);
     }
 
-    public double getSum() {
+    public double getSum(double subtract) {
         double sum = 0;
         for (var entry : averages.entrySet()) {
-            if (!activeProblems.contains(entry.getKey())) {
+            final String key = entry.getKey();
+            if (!activeProblems.contains(key)) {
                 continue;
             }
-            sum += entry.getValue().getValue();
+            final double weight = entry.getValue().getValue() - subtract;
+            if (weight < 1) {
+                LOGGER.warn("Weight < 1 for {}:  {} (+{})", key, weight, subtract);
+            }
+            sum += weight;
         }
         return sum;
     }
 
-    public Map.Entry<String, RunningAverageLong> getProblemAt(double value) {
+    public double getMin() {
+        double min = dflt;
+        for (var entry : averages.entrySet()) {
+            if (!activeProblems.contains(entry.getKey())) {
+                continue;
+            }
+            final double value = entry.getValue().getValue();
+            if (value < min) {
+                min = value;
+            }
+        }
+        return min;
+    }
+
+    public Map.Entry<String, RunningAverageLong> getProblemAt(double subtract, double value) {
         double sum = 0;
         for (var entry : averages.entrySet()) {
             String key = entry.getKey();
             if (!activeProblems.contains(key)) {
                 continue;
             }
-            final double weight = entry.getValue().getValue();
+            final double weight = entry.getValue().getValue() - subtract;
             sum += weight;
             if (sum > value) {
-                LOGGER.info("Found {} with weight {}", key, weight);
+                LOGGER.info("Found {} with weight {} (+{})", key, weight, subtract);
                 return entry;
             }
         }
@@ -94,11 +113,12 @@ public class AveragesManager {
     }
 
     public String findRandom() {
-        final double sum = getSum();
+        final double min = Math.max(0, getMin() - 1);
+        final double sum = getSum(min);
         final double rnd = RandomUtils.insecure().randomDouble(0, sum);
-        final var entry = getProblemAt(rnd);
-        double chance = 0.01 * Math.round(10000.0 * entry.getValue().getValue() / sum);
-        LOGGER.info("Sum {}, Rnd {}, Chance {}", sum, rnd, String.format("%3.2f", chance));
+        final var entry = getProblemAt(min, rnd);
+        double chance = 100.0 * (entry.getValue().getValue() - min) / sum;
+        LOGGER.info("Sum {}, Rnd {}, Chance {}", String.format("%3.2f", sum), String.format("%3.2f", rnd), String.format("%3.2f", chance));
         return entry.getKey();
     }
 
